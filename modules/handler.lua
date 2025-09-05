@@ -11,7 +11,7 @@ local BONES <const> = {
 }
 
 ---@class Handler : OxClass
----@field private private { active: boolean, limited: boolean, control: boolean, class: number | false, data: table, oxfuel: boolean, units: number, electric: boolean }
+---@field private private { active: boolean, limited: boolean, control: boolean, class: number | false, data: table, oxfuel: boolean, electric: boolean }
 ---@diagnostic disable-next-line: assign-type-mismatch
 local Handler = lib.class('vehiclehandler')
 
@@ -20,7 +20,6 @@ function Handler:constructor()
     self:setLimited(false)
     self:setControl(true)
     self.private.oxfuel = GetResourceState('ox_fuel') == 'started' and true or false
-    self.private.units = Settings.units == 'mph' and 2.23694 or 3.6
     self.private.electric = false
 end
 
@@ -33,8 +32,6 @@ function Handler:canControl() return self.private.control end
 function Handler:getClass() return self.private.class end
 
 function Handler:isFuelOx() return self.private.oxfuel end
-
-function Handler:getUnits() return self.private.units end
 
 function Handler:isElectric() return self.private.electric end
 
@@ -137,32 +134,29 @@ end
 
 function Handler:fixTire(vehicle, coords)
     local found = self:isTireBroken(vehicle, coords)
+    if not found then return false end
 
-    if found then
-        local lastengine = GetVehicleEngineHealth(vehicle)
-        local lastbody = GetVehicleBodyHealth(vehicle)
-        local lastdirt = GetVehicleDirtLevel(vehicle)
-        local success = false
+    local lastengine = GetVehicleEngineHealth(vehicle)
+    local lastbody = GetVehicleBodyHealth(vehicle)
+    local lastdirt = GetVehicleDirtLevel(vehicle)
+    local success = false
 
-        LocalPlayer.state:set("inv_busy", true, true)
+    LocalPlayer.state:set("inv_busy", true, true)
 
-        if lib.progressCircle(Progress['tirekit']) then
-            success = true
+    if lib.progressCircle(Progress['tirekit']) then
+        success = true
 
-            lib.callback('vehiclehandler:sync', false, function()
-                SetVehicleFixed(vehicle)
-                SetVehicleEngineHealth(vehicle, lastengine)
-                SetVehicleBodyHealth(vehicle, lastbody)
-                SetVehicleDirtLevel(vehicle, lastdirt)
-            end)
-        end
-
-        LocalPlayer.state:set("inv_busy", false, true)
-
-        return success
+        lib.callback('vehiclehandler:sync', false, function()
+            SetVehicleFixed(vehicle)
+            SetVehicleEngineHealth(vehicle, lastengine)
+            SetVehicleBodyHealth(vehicle, lastbody)
+            SetVehicleDirtLevel(vehicle, lastdirt)
+        end)
     end
 
-    return false
+    LocalPlayer.state:set("inv_busy", false, true)
+
+    return success
 end
 
 function Handler:fixVehicle(vehicle, coords, fixtype)
@@ -215,14 +209,14 @@ function Handler:fixVehicle(vehicle, coords, fixtype)
         else
             if backengine then
                 lib.notify({
-                    title = 'Engine bay is in back',
+                    title = locale('notify.backEngine'),
                     type = 'error'
                 })
             end
         end
     else
         lib.notify({
-            title = 'Cannot repair vehicle any further',
+            title = locale('notify.cannotRepair'),
             type = 'error'
         })
     end

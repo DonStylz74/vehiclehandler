@@ -1,10 +1,9 @@
+if not lib then print('^1ox_lib must be started before this resource.^0') return end
+lib.locale()
+
 lib.versionCheck("QuantumMalice/vehiclehandler")
 
-if not lib.checkDependency('ox_lib', '3.27.0', true) then return end
-
 if GetResourceState('ox_inventory') == 'started' then
-    if not lib.checkDependency('ox_inventory', '2.42.3', true) then return end
-
     exports('cleaningkit', function(event, item, inventory)
         if event == 'usingItem' then
             local success = lib.callback.await('vehiclehandler:basicwash', inventory.id)
@@ -39,26 +38,26 @@ lib.callback.register('vehiclehandler:sync', function()
 end)
 
 lib.addCommand('fix', {
-    help = 'Repair current vehicle',
+    help = locale('commands.fix.help'),
     restricted = 'group.admin'
 }, function(source)
     lib.callback('vehiclehandler:adminfix', source, function() end)
 end)
 
 lib.addCommand('wash', {
-    help = 'Clean current vehicle',
+    help = locale('commands.wash.help'),
     restricted = 'group.admin'
 }, function(source)
     lib.callback('vehiclehandler:adminwash', source, function() end)
 end)
 
 lib.addCommand('setfuel', {
-    help = 'Set vehicle fuel level',
+    help = locale('commands.setfuel.help'),
     params = {
         {
-            name = 'level',
-            type = 'number',
-            help = 'Amount of fuel to set',
+            name = locale('commands.setfuel.params.name'),
+            type = locale('commands.setfuel.params.type'),
+            help = locale('commands.setfuel.params.help'),
         },
     },
     restricted = 'group.admin'

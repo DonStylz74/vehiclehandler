@@ -1,12 +1,10 @@
-if not lib.checkDependency('ox_lib', '3.27.0', true) then return end
-
-if GetResourceState('ox_inventory') == 'started' then
-    if not lib.checkDependency('ox_inventory', '2.42.3', true) then return end
-end
+if not lib then print('^1ox_lib must be started before this resource.^0') return end
+lib.locale()
 
 ---@class Handler : OxClass
 local Handler = require 'modules.handler'
 local Settings = lib.load('data.vehicle')
+local Units = Settings.units == 'mph' and 2.23694 or 3.6
 
 local function startThread(vehicle)
     if not vehicle then return end
@@ -15,7 +13,6 @@ local function startThread(vehicle)
     Handler:setActive(true)
 
     local oxfuel = Handler:isFuelOx()
-    local units = Handler:getUnits()
     local class = Handler:getClass()
 
     CreateThread(function()
@@ -25,12 +22,18 @@ local function startThread(vehicle)
             local engine, body, speed = Handler:setData({
                 ['engine'] = GetVehicleEngineHealth(vehicle),
                 ['body'] = GetVehicleBodyHealth(vehicle),
-                ['speed'] = GetEntitySpeed(vehicle) * units
+                ['speed'] = GetEntitySpeed(vehicle) * Units
             })
 
-            -- Prevent negative engine health
-            if engine < 0 then
-                SetVehicleEngineHealth(cache.vehicle, 0.0)
+            -- Prevent negative engine health & driveability handler (engine)
+            if engine <= 0 then
+                if engine < 0 then
+                    SetVehicleEngineHealth(cache.vehicle, 0.0)
+                end
+
+                if IsVehicleDriveable(vehicle, true) then
+                    SetVehicleUndriveable(vehicle, true)
+                end
             end
 
             -- Prevent negative body health
@@ -38,11 +41,11 @@ local function startThread(vehicle)
                 SetVehicleBodyHealth(cache.vehicle, 0.0)
             end
 
-            -- Driveability handler (engine & fuel)
-            if not oxfuel or oxfuel and not Handler:isElectric() then
+            -- Driveability handler (fuel)
+            if not Handler:isElectric() then
                 local fuel = oxfuel and Entity(vehicle).state.fuel or GetVehicleFuelLevel(vehicle)
 
-                if engine <= 0 or fuel <= 7 then
+                if fuel <= 7 then
                     if IsVehicleDriveable(vehicle, true) then
                         SetVehicleUndriveable(vehicle, true)
                     end
@@ -129,7 +132,7 @@ AddEventHandler('entityDamaged', function (victim, _, weapon, _)
     end
 
     -- Impact handler
-    local speedDiff = Handler:getData('speed') - (GetEntitySpeed(cache.vehicle) *  Handler:getUnits())
+    local speedDiff = Handler:getData('speed') - (GetEntitySpeed(cache.vehicle) *  Units)
     if speedDiff >= Settings.threshold.speed then
 
         -- Handle wheel loss
